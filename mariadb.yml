@@ -1,0 +1,49 @@
+- name: Install MariaDB on Amazon Linux 2023 (root sem senha)
+  hosts: mariadb
+  become: true
+  gather_facts: true
+
+  vars:
+    mariadb_service_name: mariadb
+    mariadb_packages:
+      - mariadb105-server
+      - mariadb105
+    mariadb_bind_address: "0.0.0.0"
+  tasks:
+    - name: Update package metadata
+      ansible.builtin.dnf:
+        update_cache: true
+
+    - name: Install MariaDB packages
+      ansible.builtin.dnf:
+        name: "{{ mariadb_packages }}"
+        state: present
+
+    - name: Configure MariaDB bind-address
+      ansible.builtin.lineinfile:
+        path: /etc/my.cnf.d/mariadb-server.cnf
+        regexp: '^bind-address\s*='
+        line: "bind-address={{ mariadb_bind_address }}"
+        insertafter: '^\[mysqld\]'
+      notify: Restart MariaDB
+
+    - name: Enable and start MariaDB
+      ansible.builtin.service:
+        name: "{{ mariadb_service_name }}"
+        state: started
+        enabled: true
+
+    - name: Validate MariaDB is running
+      ansible.builtin.command: systemctl is-active mariadb
+      register: mariadb_status
+      changed_when: false
+
+    - name: Show MariaDB status
+      ansible.builtin.debug:
+        msg: "MariaDB status: {{ mariadb_status.stdout }}"
+
+  handlers:
+    - name: Restart MariaDB
+      ansible.builtin.service:
+        name: "{{ mariadb_service_name }}"
+        state: restarted
