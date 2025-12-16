@@ -1,5 +1,5 @@
 - name: Install MariaDB on Amazon Linux 2023 (root sem senha)
-  hosts: mariadb
+  hosts: all
   become: true
   gather_facts: true
 
